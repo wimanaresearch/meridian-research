@@ -216,8 +216,37 @@ def run_liquidity() -> None:
 
     snapshot = collect_data()
     report = analyze(snapshot)
-    publish(report, os.getenv("DISCORD_WEBHOOK_LIQUIDITY"))
+    publish(report, os.getenv("DISCORD_WEBHOOK_LIQUIDITY_RADAR"))
     print("[Liquidity] Published")
+
+
+def run_liquidity_radar() -> None:
+    from agents.liquidity_radar.collector import collect_liquidity_radar
+    from agents.liquidity_radar.analyzer import analyze_liquidity_radar
+    from publishers.discord import publish
+
+    prior = load_snapshot("liquidity_radar")
+    prior_regime = prior.get("regime") or "UNKNOWN"
+
+    print("[liquidity_radar] Collecting data...")
+    snapshot = collect_liquidity_radar()
+
+    print("[liquidity_radar] Analyzing...")
+    report = analyze_liquidity_radar(snapshot, prior_regime=prior_regime)
+    publish(report, os.getenv("DISCORD_WEBHOOK_LIQUIDITY_RADAR"))
+    print("[liquidity_radar] Posted to #liquidity-radar")
+
+    regime = _extract_regime(report)
+    save_snapshot("liquidity_radar", {
+        "fetch_date":       snapshot.get("fetch_date"),
+        "regime":           regime,
+        "net_liquidity":    snapshot.get("net_liquidity"),
+        "fed_total_assets": snapshot.get("fed_total_assets", {}).get("current"),
+        "tga":              snapshot.get("tga", {}).get("current"),
+        "on_rrp":           snapshot.get("on_rrp", {}).get("current"),
+        "bank_reserves":    snapshot.get("bank_reserves", {}).get("current"),
+    })
+    print(f"[liquidity_radar] Done  |  Regime: {regime}")
 
 
 def run_us_news() -> None:
@@ -367,14 +396,15 @@ def run_us_ta_weekly() -> None:
 
 # Daily agents — included in `all`
 AGENTS = {
-    "morning_macro": run_morning_macro,
-    "liquidity":     run_liquidity,
-    "us_news":       run_us_news,
-    "us_ta":         run_us_ta,
-    "idx_lq45":      run_idx_lq45,
-    "idx_news":      run_idx_news,
-    "crypto_ta":     run_crypto_ta,
-    "crypto_news":   run_crypto_news,
+    "morning_macro":    run_morning_macro,
+    "liquidity":        run_liquidity,
+    "liquidity_radar":  run_liquidity_radar,
+    "us_news":          run_us_news,
+    "us_ta":            run_us_ta,
+    "idx_lq45":         run_idx_lq45,
+    "idx_news":         run_idx_news,
+    "crypto_ta":        run_crypto_ta,
+    "crypto_news":      run_crypto_news,
 }
 
 # Weekly agents — not included in `all` (Saturday only)

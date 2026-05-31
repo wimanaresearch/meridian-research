@@ -30,7 +30,7 @@ def split_message(text: str, limit: int = 1850) -> list[str]:
 
 
 def publish(text: str, webhook_url: str | None = None) -> list:
-    url = webhook_url or os.environ.get("DISCORD_WEBHOOK_LIQUIDITY")
+    url = webhook_url or os.environ.get("DISCORD_WEBHOOK_LIQUIDITY_RADAR")
     if not url:
         raise EnvironmentError("No webhook URL provided")
 

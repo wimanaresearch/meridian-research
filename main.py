@@ -238,7 +238,7 @@ def run_us_ta() -> None:
 
     if not is_us_market_open():
         msg = get_market_closed_message("US")
-        publish(msg, os.getenv("DISCORD_WEBHOOK_US_TA"))
+        publish(msg, os.getenv("DISCORD_WEBHOOK_US_MOVEMENT"))
         print("[us_ta] US market closed today — posted notice")
         return
 
@@ -249,7 +249,7 @@ def run_us_ta() -> None:
     snapshot = collect_ta()
     print("[US TA] Analyzing...")
     report = analyze_ta(snapshot, prior_regime=prior_regime)
-    publish(report, os.getenv("DISCORD_WEBHOOK_US_TA"))
+    publish(report, os.getenv("DISCORD_WEBHOOK_US_MOVEMENT"))
 
     regime = _extract_regime(report)
     save_snapshot("us_ta", {"regime": regime, "date": date.today().isoformat()})
@@ -297,7 +297,7 @@ def run_idx_lq45() -> None:
 
     if not is_idx_market_open():
         msg = get_market_closed_message("IDX")
-        publish(msg, os.getenv("DISCORD_WEBHOOK_IDX_LQ45"))
+        publish(msg, os.getenv("DISCORD_WEBHOOK_IDX_MOVEMENT"))
         print("[idx_lq45] IDX closed today — posted notice")
         return
 
@@ -308,7 +308,7 @@ def run_idx_lq45() -> None:
     snapshot = collect_idx_lq45()
     print("[IDX LQ45] Analyzing...")
     report = analyze_lq45(snapshot, prior_regime=prior_regime)
-    publish(report, os.getenv("DISCORD_WEBHOOK_IDX_LQ45"))
+    publish(report, os.getenv("DISCORD_WEBHOOK_IDX_MOVEMENT"))
 
     regime = _extract_regime(report)
     save_snapshot("idx_lq45", {"regime": regime, "date": date.today().isoformat()})
@@ -332,7 +332,7 @@ def run_idx_lq45_weekly() -> None:
 
     print(f"[IDX LQ45 Weekly] Analyzing {len(snapshots)} snapshots...")
     report = analyze_lq45_weekly(snapshots, prior_regime=prior_regime)
-    publish(report, os.getenv("DISCORD_WEBHOOK_IDX_LQ45"))
+    publish(report, os.getenv("DISCORD_WEBHOOK_IDX_MOVEMENT"))
 
     regime = _extract_regime(report)
     save_snapshot("idx_lq45", {"regime": regime, "date": date.today().isoformat()})
@@ -356,7 +356,7 @@ def run_us_ta_weekly() -> None:
 
     print(f"[US TA Weekly] Analyzing {len(snapshots)} snapshots...")
     report = analyze_ta_weekly(snapshots, prior_regime=prior_regime)
-    publish(report, os.getenv("DISCORD_WEBHOOK_US_TA"))
+    publish(report, os.getenv("DISCORD_WEBHOOK_US_MOVEMENT"))
 
     regime = _extract_regime(report)
     save_snapshot("us_ta", {"regime": regime, "date": date.today().isoformat()})

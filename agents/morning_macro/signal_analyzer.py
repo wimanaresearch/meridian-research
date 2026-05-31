@@ -8,11 +8,9 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-from agents.shared.tone import get_tone_block
-
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
 
-PROMPT_PATH = Path(__file__).parent / "prompts" / "liquidity_crypto.md"
+PROMPT_PATH = Path(__file__).parent / "prompts" / "morning_signal.md"
 MODEL = "gemini-2.5-flash"
 
 _client: genai.Client | None = None
@@ -28,19 +26,23 @@ def _get_client() -> genai.Client:
     return _client
 
 
-def analyze(snapshot: dict) -> str:
-    system_prompt = PROMPT_PATH.read_text()
-
+def analyze_morning_signal(
+    snapshot: dict,
+    prior_us_regime: str = "UNKNOWN",
+    prior_idx_regime: str = "UNKNOWN",
+) -> str:
     response = _get_client().models.generate_content(
         model=MODEL,
         contents=(
-            f"Here is today's data snapshot:\n\n"
+            f"Prior US regime: {prior_us_regime}\n"
+            f"Prior IDX regime: {prior_idx_regime}\n\n"
+            f"Morning macro data ({snapshot.get('fetched_at', '')}):\n\n"
             f"```json\n{json.dumps(snapshot, indent=2)}\n```\n\n"
-            f"Produce the daily Liquidity & Crypto report."
+            f"Produce the condensed morning signal."
         ),
         config=types.GenerateContentConfig(
-            system_instruction=f"{get_tone_block()}\n\n{system_prompt}",
-            max_output_tokens=1200,
+            system_instruction=PROMPT_PATH.read_text(),
+            max_output_tokens=350,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )

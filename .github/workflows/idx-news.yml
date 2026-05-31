@@ -1,0 +1,37 @@
+name: IDX News
+
+on:
+  schedule:
+    - cron: '0 1 * * 1-5'  # 08:00 WIB Mon-Fri (UTC+7)
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run agent
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          DISCORD_WEBHOOK_MACRO_RADAR: ${{ secrets.DISCORD_WEBHOOK_MACRO_RADAR }}
+          DISCORD_WEBHOOK_CRYPTO_NEWS: ${{ secrets.DISCORD_WEBHOOK_CRYPTO_NEWS }}
+          DISCORD_WEBHOOK_IDX_NEWS: ${{ secrets.DISCORD_WEBHOOK_IDX_NEWS }}
+          DISCORD_WEBHOOK_CRYPTO_MOVEMENT: ${{ secrets.DISCORD_WEBHOOK_CRYPTO_MOVEMENT }}
+          DISCORD_WEBHOOK_IDX_MOVEMENT: ${{ secrets.DISCORD_WEBHOOK_IDX_MOVEMENT }}
+          DISCORD_WEBHOOK_US_MOVEMENT: ${{ secrets.DISCORD_WEBHOOK_US_MOVEMENT }}
+          DISCORD_WEBHOOK_WEEKLY_RECAP: ${{ secrets.DISCORD_WEBHOOK_WEEKLY_RECAP }}
+          DISCORD_WEBHOOK_ALERTS: ${{ secrets.DISCORD_WEBHOOK_ALERTS }}
+        run: python main.py idx_news

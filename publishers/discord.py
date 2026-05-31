@@ -1,15 +1,50 @@
+from __future__ import annotations
+
 import os
-from discord_webhook import DiscordWebhook
+import time
+from pathlib import Path
+
+import requests
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parents[1] / ".env", override=True)
 
 
-def publish(report: str, username: str = "MarketIntelBot") -> None:
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not webhook_url:
-        raise EnvironmentError("DISCORD_WEBHOOK_URL is not set")
+def split_message(text: str, limit: int = 1850) -> list[str]:
+    chunks: list[str] = []
+    current = ""
 
-    # Discord messages are capped at 2000 chars; split if needed
-    chunks = [report[i:i + 1900] for i in range(0, len(report), 1900)]
-    for chunk in chunks:
-        webhook = DiscordWebhook(url=webhook_url, content=chunk, username=username)
-        response = webhook.execute()
-        response.raise_for_status()
+    for line in text.split("\n"):
+        # +1 for the newline character
+        if len(current) + len(line) + 1 > limit:
+            if current:
+                chunks.append(current.strip())
+            current = line + "\n"
+        else:
+            current += line + "\n"
+
+    if current.strip():
+        chunks.append(current.strip())
+
+    return chunks
+
+
+def publish(text: str, webhook_url: str | None = None) -> list:
+    url = webhook_url or os.environ.get("DISCORD_WEBHOOK_LIQUIDITY")
+    if not url:
+        raise EnvironmentError("No webhook URL provided")
+
+    chunks = split_message(text)
+    print(f"  Total output: {len(text)} chars")
+    print(f"  Split into {len(chunks)} chunks")
+
+    responses = []
+    for i, chunk in enumerate(chunks):
+        response = requests.post(url, json={"content": chunk})
+        responses.append(response)
+        print(f"  Chunk {i+1}/{len(chunks)} sent ({len(chunk)} chars)")
+        if i < len(chunks) - 1:
+            time.sleep(0.5)
+
+    print(f"[Discord] Sent {len(chunks)} chunk(s) ({len(text)} chars total)")
+    return responses

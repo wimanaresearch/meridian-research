@@ -51,11 +51,22 @@ def analyze_morning_macro(
     prior_us_regime: str = "UNKNOWN",
     prior_idx_regime: str = "UNKNOWN",
 ) -> str:
+    ctx = snapshot.get("market_data_context", {})
+    data_label_block = (
+        f"MARKET DATA LABELS (use these exact phrases — never say 'yesterday' "
+        f"if yesterday was a weekend):\n"
+        f"  Run day       : {ctx.get('run_day', 'unknown')}\n"
+        f"  IDX data      : as of {ctx.get('idx_data_as_of', 'prior close')}\n"
+        f"  Asia data     : as of {ctx.get('asia_data_as_of', 'prior close')}\n"
+        f"  US futures    : {ctx.get('us_futures_as_of', 'prior session')}\n"
+    ) if ctx else ""
+
     response = _get_client().models.generate_content(
         model=MODEL,
         contents=(
             f"Prior US regime: {prior_us_regime}\n"
             f"Prior IDX regime: {prior_idx_regime}\n\n"
+            f"{data_label_block}\n"
             f"Morning macro data ({_fmt_date(snapshot.get('fetched_at', ''))}):\n\n"
             f"```json\n{json.dumps(snapshot, indent=2)}\n```\n\n"
             f"Produce the macro radar brief."

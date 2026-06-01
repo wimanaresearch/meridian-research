@@ -200,12 +200,91 @@ def _build_us_futures(data: pd.DataFrame) -> dict:
 
 # ── Section E: Crypto ─────────────────────────────────────────────────────────
 
+def _fetch_btc_price() -> tuple[float | None, float | None]:
+    """
+    Fetch BTC price and 24h change % via fallback chain:
+      1. CoinGecko /simple/price with COINGECKO_API_KEY
+      2. CoinGecko /simple/price public (no key)
+      3. Binance public 24hr ticker (no key)
+    Returns (price, chg_pct_24h). Never raises — returns (None, None) on
+    total failure and sets unavailable flag on the result dict.
+    """
+    cg_key = os.getenv("COINGECKO_API_KEY", "")
+
+    # 1. CoinGecko with API key
+    if cg_key:
+        try:
+            resp = requests.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={
+                    "ids": "bitcoin",
+                    "vs_currencies": "usd",
+                    "include_24hr_change": "true",
+                },
+                headers={"x-cg-demo-api-key": cg_key, "Accept": "application/json"},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            d = resp.json().get("bitcoin", {})
+            if d.get("usd"):
+                print("  BTC via CoinGecko (keyed)")
+                return _r(d["usd"], 0), _r(d.get("usd_24h_change"), 2)
+        except Exception as e:
+            print(f"  CoinGecko keyed BTC failed: {e}")
+
+    # 2. CoinGecko public (no key)
+    try:
+        resp = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={
+                "ids": "bitcoin",
+                "vs_currencies": "usd",
+                "include_24hr_change": "true",
+            },
+            headers={"Accept": "application/json"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        d = resp.json().get("bitcoin", {})
+        if d.get("usd"):
+            print("  BTC via CoinGecko (public)")
+            return _r(d["usd"], 0), _r(d.get("usd_24h_change"), 2)
+    except Exception as e:
+        print(f"  CoinGecko public BTC failed: {e}")
+
+    # 3. Binance public API
+    try:
+        resp = requests.get(
+            "https://api.binance.com/api/v3/ticker/24hr",
+            params={"symbol": "BTCUSDT"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        d = resp.json()
+        price  = _r(float(d["lastPrice"]), 0)
+        chg    = _r(float(d["priceChangePercent"]), 2)
+        print("  BTC via Binance (public)")
+        return price, chg
+    except Exception as e:
+        print(f"  Binance BTC failed: {e}")
+
+    print("  WARNING: All BTC price sources failed")
+    return None, None
+
+
 def _build_crypto(data: pd.DataFrame) -> dict:
-    btc_c, btc_p = _cp(data, "BTC-USD")
+    # BTC: use dedicated fallback chain instead of yfinance
+    btc_price, btc_chg = _fetch_btc_price()
+
+    # ETH: yfinance is acceptable (less critical)
     eth_c, eth_p = _cp(data, "ETH-USD")
 
     result: dict = {
-        "btc": {"price": _r(btc_c, 0), "chg_pct": _chg_pct(btc_c, btc_p)},
+        "btc": {
+            "price":       btc_price,
+            "chg_pct":     btc_chg,
+            "unavailable": btc_price is None,
+        },
         "eth": {"price": _r(eth_c, 0), "chg_pct": _chg_pct(eth_c, eth_p)},
         "total_mcap":       None,
         "total2_mcap":      None,
@@ -215,42 +294,92 @@ def _build_crypto(data: pd.DataFrame) -> dict:
         "mcap_chg_24h_pct": None,
     }
 
-    try:
-        resp = requests.get(
-            "https://api.coingecko.com/api/v3/global",
-            timeout=15,
-            headers={"Accept": "application/json"},
-        )
-        resp.raise_for_status()
-        gd = resp.json().get("data", {})
+    # CoinGecko global for market cap and dominance
+    cg_key = os.getenv("COINGECKO_API_KEY", "")
+    cg_headers = {"Accept": "application/json"}
+    if cg_key:
+        cg_headers["x-cg-demo-api-key"] = cg_key
 
-        total    = gd.get("total_market_cap", {}).get("usd")
-        btc_dom  = gd.get("market_cap_percentage", {}).get("btc")
-        eth_dom  = gd.get("market_cap_percentage", {}).get("eth")
-        mcap_chg = gd.get("market_cap_change_percentage_24h_usd")
+    for attempt, url in enumerate([
+        "https://api.coingecko.com/api/v3/global",
+        "https://api.coingecko.com/api/v3/global",  # retry same endpoint
+    ]):
+        try:
+            resp = requests.get(url, timeout=15, headers=cg_headers)
+            resp.raise_for_status()
+            gd = resp.json().get("data", {})
 
-        total2 = (total * (1 - btc_dom / 100)) if (total and btc_dom is not None) else None
-        total3 = (
-            total * (1 - btc_dom / 100 - eth_dom / 100)
-            if (total and btc_dom is not None and eth_dom is not None)
-            else None
-        )
+            total    = gd.get("total_market_cap", {}).get("usd")
+            btc_dom  = gd.get("market_cap_percentage", {}).get("btc")
+            eth_dom  = gd.get("market_cap_percentage", {}).get("eth")
+            mcap_chg = gd.get("market_cap_change_percentage_24h_usd")
 
-        result.update({
-            "total_mcap":       _fmt_mcap(total),
-            "total2_mcap":      _fmt_mcap(total2),
-            "total3_mcap":      _fmt_mcap(total3),
-            "btc_dominance":    _r(btc_dom, 1),
-            "eth_dominance":    _r(eth_dom, 1),
-            "mcap_chg_24h_pct": _r(mcap_chg, 2),
-        })
-    except Exception as e:
-        print(f"  CoinGecko failed: {e}")
+            total2 = (total * (1 - btc_dom / 100)) if (total and btc_dom is not None) else None
+            total3 = (
+                total * (1 - btc_dom / 100 - eth_dom / 100)
+                if (total and btc_dom is not None and eth_dom is not None)
+                else None
+            )
+
+            result.update({
+                "total_mcap":       _fmt_mcap(total),
+                "total2_mcap":      _fmt_mcap(total2),
+                "total3_mcap":      _fmt_mcap(total3),
+                "btc_dominance":    _r(btc_dom, 1),
+                "eth_dominance":    _r(eth_dom, 1),
+                "mcap_chg_24h_pct": _r(mcap_chg, 2),
+            })
+            break
+        except Exception as e:
+            print(f"  CoinGecko global attempt {attempt + 1} failed: {e}")
+            if attempt == 0:
+                time.sleep(1)
 
     return result
 
 
 # ── Section F: Asia Session + FX ─────────────────────────────────────────────
+
+def _market_data_label(now_wib: datetime) -> dict:
+    """
+    Return human-readable 'as of X close' labels for IDX and Asia markets
+    based on the WIB run day, so the analyzer never says 'yesterday' when
+    yesterday was a weekend.
+
+    Returns a dict injected into the snapshot under key 'market_data_context'.
+    """
+    wd = now_wib.weekday()  # 0=Mon, 1=Tue, ..., 4=Fri, 5=Sat, 6=Sun
+
+    if wd == 0:        # Monday run — last data was Friday
+        idx_label   = "Friday close"
+        asia_label  = "Friday close"
+        us_label    = "Friday close (US session ended Friday)"
+    elif 1 <= wd <= 4: # Tue–Fri — last data was yesterday (a weekday)
+        day_name    = (now_wib - timedelta(days=1)).strftime("%A")
+        idx_label   = f"{day_name} close"
+        asia_label  = f"{day_name} close"
+        us_label    = f"{day_name} close (prior US session)"
+    elif wd == 5:      # Saturday — last trading day was Friday
+        idx_label   = "Friday close"
+        asia_label  = "Friday close"
+        us_label    = "Friday close (US session ended Friday)"
+    else:              # Sunday — last trading day was Friday
+        idx_label   = "Friday close"
+        asia_label  = "Friday close"
+        us_label    = "Friday close (US session ended Friday)"
+
+    return {
+        "idx_data_as_of":   idx_label,
+        "asia_data_as_of":  asia_label,
+        "us_futures_as_of": us_label,
+        "run_day":          now_wib.strftime("%A"),
+        "note": (
+            "Data labels reflect the most recent completed trading session. "
+            "Use these labels when describing market closes — never say 'yesterday' "
+            "if yesterday was a weekend."
+        ),
+    }
+
 
 def _build_asia(data: pd.DataFrame) -> dict:
     result: dict = {}
@@ -387,8 +516,9 @@ def collect_morning_macro() -> dict:
     crypto = _build_crypto(data)
 
     print("  [F] Asia session + FX...")
-    asia = _build_asia(data)
-    fx   = _build_fx(data)
+    asia                = _build_asia(data)
+    fx                  = _build_fx(data)
+    market_data_context = _market_data_label(now_wib)
 
     print("  [G] Economic calendar...")
     economic_calendar = _fetch_economic_calendar(today_str)
@@ -397,18 +527,19 @@ def collect_morning_macro() -> dict:
     news = _fetch_news(cutoff_ts)
 
     snapshot = {
-        "fetched_at":        fetched_at,
-        "date":              today_str,
-        "rates_bonds":       rates_bonds,
-        "yield_curve":       yield_curve,
-        "dollar_vol":        dollar_vol,
-        "commodities":       commodities,
-        "us_futures":        us_futures,
-        "crypto":            crypto,
-        "asia":              asia,
-        "fx":                fx,
-        "economic_calendar": economic_calendar,
-        "news":              news,
+        "fetched_at":           fetched_at,
+        "date":                 today_str,
+        "market_data_context":  market_data_context,
+        "rates_bonds":          rates_bonds,
+        "yield_curve":          yield_curve,
+        "dollar_vol":           dollar_vol,
+        "commodities":          commodities,
+        "us_futures":           us_futures,
+        "crypto":               crypto,
+        "asia":                 asia,
+        "fx":                   fx,
+        "economic_calendar":    economic_calendar,
+        "news":                 news,
     }
 
     payload = json.dumps(snapshot, indent=2)

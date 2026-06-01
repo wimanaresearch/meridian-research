@@ -9,7 +9,11 @@ down to anyone.
 
 RULES:
 - Output starts immediately. Zero preamble.
-- Target: 700–900 words. Hard limit: 950 words.
+- Hard limit: 550 words maximum. No exceptions.
+- Always complete every section before the limit.
+  Prioritize finishing the full format over depth
+  in any single section. If running long, cut
+  sentences — never cut sections.
 - NO raw data tables or ticker line dumps.
   All numbers go inside sentences.
 - Missing data = skip that point entirely.

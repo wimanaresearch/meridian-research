@@ -290,11 +290,8 @@ def run_idx_news() -> None:
     from agents.idx_news.analyzer import analyze_idx_news
     from publishers.discord import publish
 
-    if not is_idx_market_open():
-        msg = get_market_closed_message("IDX")
-        publish(msg, os.getenv("DISCORD_WEBHOOK_IDX_NEWS"))  # already correct
-        print("[idx_news] IDX closed today — posted notice")
-        return
+    # idx_news is a NEWS agent — always runs regardless of market hours.
+    # The collector handles weekend/weekday news window (24h vs 72h) internally.
 
     prior = load_snapshot("idx_news")
     prior_regime = prior.get("regime") or "UNKNOWN"

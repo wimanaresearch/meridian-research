@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-from agents.shared.tone import get_tone_block
+from agents.shared.tone import get_tone_block, SERA_PERSONA
 from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
@@ -230,19 +230,64 @@ def _get_client() -> genai.Client:
     return _client
 
 
+# ── Payload trimmer ───────────────────────────────────────────────────────────
+
+def _slim_payload(snapshot: dict) -> dict:
+    """Return a whitelist-trimmed copy of the snapshot for the Gemini prompt.
+
+    The collector already filters 503 tickers down to top movers and breakouts
+    before saving — this function is a defensive second layer that locks the
+    exact fields sent to Gemini regardless of future collector changes.
+
+    Fields included:
+      - date, indices, macro
+      - sectors_ranked (top/bottom 5, name + chg only)
+      - top_movers: up to top 10 gainers + 10 losers (ticker, close, chg, vol)
+      - breakout_candidates: up to 5 (key setup fields only)
+    """
+    def _trim_mover(m: dict) -> dict:
+        return {k: m[k] for k in ("ticker", "close", "day_chg_pct", "vol_ratio") if k in m}
+
+    def _trim_breakout(b: dict) -> dict:
+        return {k: b[k] for k in (
+            "ticker", "close", "dist_52w_high_pct", "ma50", "vol_ratio", "setup_type"
+        ) if k in b}
+
+    def _trim_sector(s: dict) -> dict:
+        return {k: s[k] for k in ("ticker", "name", "day_chg_pct") if k in s}
+
+    movers = snapshot.get("top_movers", {})
+    sectors = snapshot.get("sectors_ranked", [])
+
+    return {
+        "date":       snapshot.get("date"),
+        "indices":    snapshot.get("indices", {}),
+        "macro":      snapshot.get("macro", {}),
+        "sectors_ranked": [_trim_sector(s) for s in sectors[:10]],
+        "top_movers": {
+            "gainers": [_trim_mover(m) for m in movers.get("gainers", [])[:10]],
+            "losers":  [_trim_mover(m) for m in movers.get("losers",  [])[:10]],
+        },
+        "breakout_candidates": [_trim_breakout(b) for b in snapshot.get("breakout_candidates", [])[:5]],
+    }
+
+
 # ── Analyzers ─────────────────────────────────────────────────────────────────
 
 def analyze_ta(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
-    system_prompt = f"{_PROMPT_HEAD}\n\n{get_tone_block()}\n\n{_PROMPT_TAIL}"
+    system_prompt = f"{SERA_PERSONA}\n\n{_PROMPT_HEAD}\n\n{get_tone_block()}\n\n{_PROMPT_TAIL}"
+    payload = _slim_payload(snapshot)
+    contents = (
+        f"Prior regime: {prior_regime}\n\n"
+        f"EOD data for {_fmt_date(snapshot['date'])}:\n\n"
+        f"```json\n{json.dumps(payload, indent=2)}\n```\n\n"
+        f"Produce the daily US Market Movement brief."
+    )
+    print(f"[us_ta] Prompt payload: {len(contents):,} chars (~{len(contents) // 4:,} tokens)")
 
     response = _gemini_generate(_get_client(),
         model=MODEL,
-        contents=(
-            f"Prior regime: {prior_regime}\n\n"
-            f"EOD data for {_fmt_date(snapshot['date'])}:\n\n"
-            f"```json\n{json.dumps(snapshot, indent=2)}\n```\n\n"
-            f"Produce the daily US Market Movement brief."
-        ),
+        contents=contents,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
             max_output_tokens=1800,

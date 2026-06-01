@@ -27,6 +27,7 @@ from google.genai import types
 from dotenv import load_dotenv
 
 from agents.shared.tone import get_tone_block
+from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
 
@@ -61,7 +62,7 @@ def analyze_morning_macro(
         f"  US futures    : {ctx.get('us_futures_as_of', 'prior session')}\n"
     ) if ctx else ""
 
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Prior US regime: {prior_us_regime}\n"

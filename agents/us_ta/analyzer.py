@@ -10,6 +10,7 @@ from google.genai import types
 from dotenv import load_dotenv
 
 from agents.shared.tone import get_tone_block
+from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
 
@@ -234,7 +235,7 @@ def _get_client() -> genai.Client:
 def analyze_ta(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
     system_prompt = f"{_PROMPT_HEAD}\n\n{get_tone_block()}\n\n{_PROMPT_TAIL}"
 
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Prior regime: {prior_regime}\n\n"
@@ -254,7 +255,7 @@ def analyze_ta(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
 def analyze_ta_weekly(snapshots: list[dict], prior_regime: str = "UNKNOWN") -> str:
     latest_date = snapshots[0]["date"] if snapshots else "unknown"
 
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Prior regime: {prior_regime}\n\n"

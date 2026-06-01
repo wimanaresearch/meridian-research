@@ -10,6 +10,7 @@ from google.genai import types
 from dotenv import load_dotenv
 
 from agents.shared.tone import get_tone_block
+from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
 
@@ -236,7 +237,7 @@ def analyze_weekly_recap(snapshot: dict) -> str:
             for k, v in payload["snapshots"].items()
         }
 
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Weekly data (week ending {_fmt_date(snapshot.get('week_ending', ''))}):\n\n"

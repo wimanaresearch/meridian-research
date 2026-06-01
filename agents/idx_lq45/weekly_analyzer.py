@@ -30,7 +30,7 @@ def _get_client() -> genai.Client:
 def analyze_lq45_weekly(snapshots: list[dict], prior_regime: str = "UNKNOWN") -> str:
     latest_date = snapshots[0]["date"] if snapshots else "unknown"
 
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Prior regime: {prior_regime}\n\n"

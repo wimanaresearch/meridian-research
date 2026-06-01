@@ -27,6 +27,7 @@ from google.genai import types
 from dotenv import load_dotenv
 
 from agents.shared.tone import get_tone_block
+from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
 
@@ -47,7 +48,7 @@ def _get_client() -> genai.Client:
 
 
 def analyze_lq45(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Prior regime: {prior_regime}\n\n"

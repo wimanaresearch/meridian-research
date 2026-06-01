@@ -31,7 +31,7 @@ def analyze_morning_signal(
     prior_us_regime: str = "UNKNOWN",
     prior_idx_regime: str = "UNKNOWN",
 ) -> str:
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Prior US regime: {prior_us_regime}\n"

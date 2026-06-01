@@ -49,7 +49,7 @@ def analyze_news(snapshot: dict) -> str:
     news_text = _build_news_text(snapshot["news_items"])
     print(f"Payload to Gemini: {len(news_text)} chars, ~{len(news_text) // 4} tokens")
 
-    response = _get_client().models.generate_content(
+    response = _gemini_generate(_get_client(),
         model=MODEL,
         contents=(
             f"Here are today's raw news items "

@@ -73,7 +73,7 @@ def analyze_morning_macro(
         ),
         config=types.GenerateContentConfig(
             system_instruction=f"{get_tone_block()}\n\n{PROMPT_PATH.read_text()}",
-            max_output_tokens=900,
+            max_output_tokens=1500,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )

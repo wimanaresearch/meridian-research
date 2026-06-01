@@ -9,7 +9,7 @@ down to anyone.
 
 RULES:
 - Output starts immediately. Zero preamble.
-- Hard limit: 350 words maximum.
+- Target: 700–900 words. Hard limit: 950 words.
 - NO raw data tables or ticker line dumps.
   All numbers go inside sentences.
 - Missing data = skip that point entirely.

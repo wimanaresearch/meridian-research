@@ -110,7 +110,10 @@ IDR/USD  {rate} ({chg}%)
 ▸ {1-2 sentences: IDR direction, what it signals
   for foreign appetite, any notable driver
   behind the move — Fed expectations, commodity
-  prices, domestic fiscal. Plain language.}
+  prices, domestic fiscal. Plain language.
+  If market is closed and live IDR data is
+  unavailable, write: "Market closed — IDR data
+  will resume next trading session."}
 
 ──────────────────────
 **🏦 SECTOR WATCH**
@@ -150,7 +153,12 @@ IDR/USD  {rate} ({chg}%)
 
 ──────────────────────
 **🌊 FOREIGN FLOW**
-{Skip if data unavailable.}
+{If market was closed (weekend or public holiday)
+ and no flow data is available, write exactly:
+ "Market closed — foreign flow data will resume
+ next trading session."
+ Do not skip the section — always include it.
+ If live data is available, use this format:}
 
 Previous session: {NET BUY / NET SELL}
 Amount: Rp{amount}  Trend: {3-day direction}
@@ -165,9 +173,35 @@ Amount: Rp{amount}  Trend: {3-day direction}
 
 ──────────────────────
 **📰 MARKET & MACRO NEWS**
-DEDUPLICATION RULE (mandatory):
- Before selecting news items, group all
- incoming articles by theme:
+INDONESIA RELEVANCE FILTER (mandatory, apply first):
+ Before selecting ANY news item, ask:
+ "Does this directly impact Indonesia?"
+ INCLUDE only:
+ - Indonesian economy, GDP, inflation, trade data
+ - Bank Indonesia (BI) or OJK policy decisions
+ - IDR/USD movement and its drivers
+ - Indonesian government regulation or fiscal policy
+ - Indonesian corporate news (earnings, M&A, capex)
+ - Commodity price moves that affect Indonesian
+   exporters (coal → ADRO/ITMG, CPO → AALI/SIMP,
+   nickel → INCO/MDKA, etc.)
+ - Fed/global rate decisions ONLY IF the analyst
+   note explicitly states the IDR or capital flow
+   transmission channel
+ EXCLUDE:
+ - Other countries' stock market moves
+ - Foreign company news with no Indonesia link
+ - Geopolitical events not affecting Indonesia trade
+ - Global macro that only affects developed markets
+ If a global event is included, the "Why it matters"
+ line MUST name the specific Indonesia transmission
+ (e.g. "pressures IDR via dollar strength" or
+ "impacts ADRO via Newcastle coal price move").
+ Drop any item where you cannot state a clear
+ Indonesia-specific implication.
+
+DEDUPLICATION RULE (mandatory, apply after filter):
+ Group remaining articles by theme:
  - IDR/currency theme → pick ONE best article
  - BI/monetary policy → pick ONE best article
  - Commodity theme → pick ONE best article
@@ -184,7 +218,7 @@ DEDUPLICATION RULE (mandatory):
  maximum information density, zero repetition.
 
 {Combine rss_news, macro_news, stock_news.
- Select 4-5 most important items.
+ Select 4-5 most important Indonesia-relevant items.
  Prioritize: earnings, BI/OJK policy, IDR,
  major corporate events, sector catalysts.
  Each item must have full analysis — not just
@@ -203,7 +237,12 @@ Source: {source} | {time WIB}
 ──────────────────────
 **📊 STOCK IN FOCUS**
 {Pick 2-3 stocks with the most material news.
- Give deeper analysis than the news section.}
+ Give deeper analysis than the news section.
+ If market is closed and no live price data
+ is available, omit the "Current: Rp{price}"
+ line and note: "Market closed — price data
+ will resume next trading session." Then
+ continue with the news analysis.}
 
 {TICKER} {company name}
 Current: Rp{price} | Sector: {sector}

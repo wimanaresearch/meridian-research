@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parents[1] / ".env", override=True)
 
 
-def split_message(text: str, limit: int = 1950) -> list[str]:
+def split_message(text: str, limit: int = 2300) -> list[str]:
     chunks: list[str] = []
     current = ""
 

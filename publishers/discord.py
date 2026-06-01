@@ -40,11 +40,25 @@ def publish(text: str, webhook_url: str | None = None) -> list:
 
     responses = []
     for i, chunk in enumerate(chunks):
-        response = requests.post(url, json={"content": chunk})
+        # Retry once on 429 rate-limit; log any non-2xx clearly
+        for attempt in range(2):
+            response = requests.post(url, json={"content": chunk})
+            if response.status_code == 429:
+                retry_after = float(response.json().get("retry_after", 1.0))
+                print(f"  Rate limited on chunk {i+1} — waiting {retry_after}s")
+                time.sleep(retry_after + 0.1)
+                continue
+            break
+
         responses.append(response)
-        print(f"  Chunk {i+1}/{len(chunks)} sent ({len(chunk)} chars)")
-        if i < len(chunks) - 1:
-            time.sleep(0.5)
+
+        if response.status_code in (200, 204):
+            print(f"  Chunk {i+1}/{len(chunks)} sent ({len(chunk)} chars)")
+        else:
+            print(f"  ERROR chunk {i+1}/{len(chunks)}: HTTP {response.status_code} — {response.text[:120]}")
+
+        # Always wait between chunks to avoid rate limiting
+        time.sleep(1.0)
 
     print(f"[Discord] Sent {len(chunks)} chunk(s) ({len(text)} chars total)")
     return responses

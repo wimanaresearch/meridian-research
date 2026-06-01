@@ -15,7 +15,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-from agents.shared.tone import get_tone_block
+from agents.shared.tone import get_tone_block, NEO_PERSONA
 from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
@@ -179,7 +179,7 @@ LIQUIDITY VERDICT: [REGIME] — [one sentence implication for risk assets]
 
 def analyze_liquidity_radar(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
     fetch_date   = _fmt_date(snapshot.get("fetch_date", ""))
-    system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(tone_block=get_tone_block())
+    system_prompt = NEO_PERSONA + "\n\n" + _SYSTEM_PROMPT_TEMPLATE.format(tone_block=get_tone_block())
 
     user_message = _USER_PROMPT_TEMPLATE.format(
         prior_regime = prior_regime,

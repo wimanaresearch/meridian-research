@@ -7,6 +7,9 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
+from agents.shared.tone import SERA_PERSONA
+from agents.shared.gemini import _gemini_generate
+
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "us_news.md"
@@ -45,7 +48,7 @@ def _build_news_text(items: list[dict]) -> str:
 
 
 def analyze_news(snapshot: dict) -> str:
-    system_prompt = PROMPT_PATH.read_text()
+    system_prompt = SERA_PERSONA + "\n\n" + PROMPT_PATH.read_text()
     news_text = _build_news_text(snapshot["news_items"])
     print(f"Payload to Gemini: {len(news_text)} chars, ~{len(news_text) // 4} tokens")
 

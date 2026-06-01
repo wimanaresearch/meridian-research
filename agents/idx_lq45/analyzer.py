@@ -26,7 +26,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-from agents.shared.tone import get_tone_block
+from agents.shared.tone import get_tone_block, KALA_PERSONA
 from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
@@ -57,7 +57,7 @@ def analyze_lq45(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
             f"Produce the EOD LQ45 Market Structure brief."
         ),
         config=types.GenerateContentConfig(
-            system_instruction=f"{get_tone_block()}\n\n{DAILY_PROMPT.read_text()}",
+            system_instruction=f"{KALA_PERSONA}\n\n{get_tone_block()}\n\n{DAILY_PROMPT.read_text()}",
             max_output_tokens=800,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),

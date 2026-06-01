@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-from agents.shared.tone import get_tone_block
+from agents.shared.tone import get_tone_block, KAI_PERSONA
 from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
@@ -231,7 +231,7 @@ def _get_client() -> genai.Client:
 # ── Analyzer ──────────────────────────────────────────────────────────────────
 
 def analyze_crypto_news(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
-    system_prompt = f"{_PROMPT_HEAD}\n\n{get_tone_block()}\n\n{_PROMPT_TAIL}"
+    system_prompt = f"{KAI_PERSONA}\n\n{_PROMPT_HEAD}\n\n{get_tone_block()}\n\n{_PROMPT_TAIL}"
 
     # Trim top200_symbols from payload — too large, not needed by LLM
     payload = {k: v for k, v in snapshot.items() if k != "top200_symbols"}

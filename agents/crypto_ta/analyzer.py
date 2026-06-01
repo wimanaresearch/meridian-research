@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-from agents.shared.tone import get_tone_block
+from agents.shared.tone import get_tone_block, KAI_PERSONA
 from agents.shared.gemini import _gemini_generate
 
 load_dotenv(Path(__file__).parents[2] / ".env", override=True)
@@ -57,7 +57,7 @@ def analyze_crypto_ta(snapshot: dict, prior_regime: str = "UNKNOWN") -> str:
             f"Produce the EOD crypto market brief."
         ),
         config=types.GenerateContentConfig(
-            system_instruction=DAILY_PROMPT.read_text().replace("<<TONE_BLOCK>>", get_tone_block()),
+            system_instruction=KAI_PERSONA + "\n\n" + DAILY_PROMPT.read_text().replace("<<TONE_BLOCK>>", get_tone_block()),
             max_output_tokens=1800,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),

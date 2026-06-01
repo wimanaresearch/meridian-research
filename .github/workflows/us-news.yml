@@ -1,0 +1,31 @@
+name: US News
+
+on:
+  schedule:
+    - cron: '0 23 * * 2-6'  # 06:00 WIB Tue-Sat (UTC+7) — covers Mon-Fri US sessions
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-us-news]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run agent
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          DISCORD_WEBHOOK_US_NEWS: ${{ secrets.DISCORD_WEBHOOK_US_NEWS }}
+        run: python main.py us_news

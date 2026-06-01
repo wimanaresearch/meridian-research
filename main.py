@@ -250,14 +250,29 @@ def run_liquidity_radar() -> None:
 
 
 def run_us_news() -> None:
-    from agents.us_news.collector import collect_news
-    from agents.us_news.analyzer import analyze_news
+    from agents.us_news.collector import collect_us_news
+    from agents.us_news.analyzer import analyze_us_news
     from publishers.discord import publish
 
-    snapshot = collect_news()
-    report = analyze_news(snapshot)
+    prior = load_snapshot("us_news")
+    prior_regime = prior.get("regime") or "UNKNOWN"
+
+    print("[us_news] Collecting data...")
+    snapshot = collect_us_news()
+
+    print("[us_news] Analyzing...")
+    report = analyze_us_news(snapshot, prior_regime=prior_regime)
     publish(report, os.getenv("DISCORD_WEBHOOK_US_NEWS"))
-    print("[US News] Published")
+    print("[us_news] Posted to #us-market-news")
+
+    regime = _extract_regime(report)
+    save_snapshot("us_news", {
+        "fetched_at": snapshot.get("fetched_at"),
+        "regime":     regime,
+        "sp500":      ((snapshot.get("indices") or {}).get("sp500") or {}).get("price"),
+        "vix":        ((snapshot.get("indices") or {}).get("vix") or {}).get("price"),
+    })
+    print(f"[us_news] Done  |  Regime: {regime}")
 
 
 def run_us_ta() -> None:

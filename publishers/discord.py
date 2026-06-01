@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parents[1] / ".env", override=True)
 
 
-def split_message(text: str, limit: int = 2300) -> list[str]:
+def split_message(text: str, limit: int = 1950) -> list[str]:
     chunks: list[str] = []
     current = ""
 
@@ -40,12 +40,20 @@ def publish(text: str, webhook_url: str | None = None) -> list:
 
     responses = []
     for i, chunk in enumerate(chunks):
-        # Retry once on 429 rate-limit; log any non-2xx clearly
+        n = i + 1
+        total = len(chunks)
+        print(f"  Posting chunk {n}/{total} — chars: {len(chunk)}")
+
         for attempt in range(2):
             response = requests.post(url, json={"content": chunk})
+
             if response.status_code == 429:
-                retry_after = float(response.json().get("retry_after", 1.0))
-                print(f"  Rate limited on chunk {i+1} — waiting {retry_after}s")
+                try:
+                    retry_after = float(response.json().get("retry_after", 2.0))
+                except Exception:
+                    retry_after = 2.0
+                print(f"  429 RATE LIMITED on chunk {n}/{total} — retry_after: {retry_after}s")
+                print(f"  Retrying chunk {n}/{total} after {retry_after}s")
                 time.sleep(retry_after + 0.1)
                 continue
             break
@@ -53,12 +61,12 @@ def publish(text: str, webhook_url: str | None = None) -> list:
         responses.append(response)
 
         if response.status_code in (200, 204):
-            print(f"  Chunk {i+1}/{len(chunks)} sent ({len(chunk)} chars)")
+            print(f"  Chunk {n}/{total} posted successfully (HTTP {response.status_code})")
         else:
-            print(f"  ERROR chunk {i+1}/{len(chunks)}: HTTP {response.status_code} — {response.text[:120]}")
+            print(f"  ERROR chunk {n}/{total}: HTTP {response.status_code}")
+            print(f"  Response body: {response.text}")
 
-        # Always wait between chunks to avoid rate limiting
-        time.sleep(1.0)
+        time.sleep(2.0)
 
     print(f"[Discord] Sent {len(chunks)} chunk(s) ({len(text)} chars total)")
     return responses

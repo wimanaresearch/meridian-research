@@ -7,6 +7,8 @@ on:
     # Monday US close = Tuesday 04:00 WIB → run Tuesday morning WIB.
     - cron: '0 2 * * 2-6'
   workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-us-ta]
 
 jobs:
   run:

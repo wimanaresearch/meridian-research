@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 2 * * 3,6'  # 09:00 WIB Wednesday and Saturday (UTC+7)
   workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-liquidity-radar]
 
 jobs:
   run:

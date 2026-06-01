@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 1 * * 1-5'  # 08:00 WIB Mon-Fri (UTC+7)
   workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-idx-news]
 
 jobs:
   run:

@@ -233,7 +233,14 @@ def run_liquidity_radar() -> None:
 
     print("[liquidity_radar] Analyzing...")
     report = analyze_liquidity_radar(snapshot, prior_regime=prior_regime)
-    publish(report, os.getenv("DISCORD_WEBHOOK_LIQUIDITY_RADAR"))
+
+    # Target channel: #liquidity-radar
+    # Secret name: DISCORD_WEBHOOK_LIQUIDITY_RADAR
+    webhook = os.getenv("DISCORD_WEBHOOK_LIQUIDITY_RADAR")
+    if not webhook:
+        print("[liquidity_radar] WARNING: DISCORD_WEBHOOK_LIQUIDITY_RADAR not set — skipping publish")
+        return
+    publish(report, webhook)
     print("[liquidity_radar] Posted to #liquidity-radar")
 
     regime = _extract_regime(report)

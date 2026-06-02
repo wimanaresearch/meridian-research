@@ -151,14 +151,18 @@ def collect_liquidity_radar() -> dict:
     print(f"      current={fed_cur}B  prior={fed_prior}B")
     time.sleep(0.4)
 
-    # ── [2] SOMA Holdings — WSECFA (millions → billions) ─────────────────────
-    # WSECFA: Securities held outright (Fed H.4.1 equivalent, weekly)
-    # Fallback: WSHOSA (Treasury securities held outright) — both in millions
-    print("  [2] SOMA Holdings (FRED: WSECFA)...")
-    soma_cur, soma_prior = _fred("WSECFA", fred_key, divisor=1000)
+    # ── [2] SOMA Holdings — WSECOUT (millions → billions) ────────────────────
+    # WSECOUT: Total securities held outright (Fed H.4.1, weekly)
+    #   Value ~$6.4T = Treasuries (~$4.4T) + MBS (~$2.0T) + residual agency debt
+    #   Verified 2026-06: TREAST($4,462B) + WSHOMCB($1,965B) ≈ WSECOUT($6,437B) ✓
+    # Fallback: TREAST (Treasury securities only, ~$4.4T) if WSECOUT fails
+    # Note: WSECFA, WSHOSA, WSOMA all return 400 — discontinued/invalid series IDs
+    print("  [2] SOMA Holdings (FRED: WSECOUT)...")
+    soma_cur, soma_prior = _fred("WSECOUT", fred_key, divisor=1000)
     if soma_cur is None:
-        print("      WSECFA unavailable, trying WSHOSA...")
-        soma_cur, soma_prior = _fred("WSHOSA", fred_key, divisor=1000)
+        print("      WSECOUT unavailable, trying TREAST (sleep 2s first)...")
+        time.sleep(2)
+        soma_cur, soma_prior = _fred("TREAST", fred_key, divisor=1000)
     print(f"      current={soma_cur}B  prior={soma_prior}B")
     time.sleep(0.4)
 

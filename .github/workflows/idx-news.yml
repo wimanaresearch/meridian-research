@@ -1,8 +1,6 @@
 name: IDX News
 
 on:
-  schedule:
-    - cron: '0 1 * * 1-5'  # 08:00 WIB Mon-Fri (UTC+7)
   workflow_dispatch:
   repository_dispatch:
     types: [trigger-idx-news]
@@ -10,6 +8,10 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 

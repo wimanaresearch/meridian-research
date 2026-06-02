@@ -1,8 +1,6 @@
 name: IDX Movement
 
 on:
-  schedule:
-    - cron: '30 9 * * 1-5'  # 16:30 WIB Mon-Fri (UTC+7) — after IDX close
   workflow_dispatch:
   repository_dispatch:
     types: [trigger-idx-lq45]
@@ -10,6 +8,10 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 

@@ -1,8 +1,6 @@
 name: Weekly Recap
 
 on:
-  schedule:
-    - cron: '0 12 * * 0'  # 19:00 WIB Sunday (UTC+7)
   workflow_dispatch:
   repository_dispatch:
     types: [trigger-weekly-recap]
@@ -10,6 +8,10 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 

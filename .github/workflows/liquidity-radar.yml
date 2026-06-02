@@ -1,8 +1,7 @@
+# NOT YET ACTIVE - do not enable cron-job.org for this
 name: Liquidity Radar
 
 on:
-  schedule:
-    - cron: '0 2 * * 3,6'  # 09:00 WIB Wednesday and Saturday (UTC+7)
   workflow_dispatch:
   repository_dispatch:
     types: [trigger-liquidity-radar]
@@ -10,6 +9,10 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 

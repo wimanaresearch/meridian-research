@@ -1,8 +1,6 @@
 name: Crypto TA
 
 on:
-  schedule:
-    - cron: '0 2 * * *'  # 09:00 WIB daily (UTC+7)
   workflow_dispatch:
   repository_dispatch:
     types: [trigger-crypto-ta]
@@ -10,6 +8,10 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 

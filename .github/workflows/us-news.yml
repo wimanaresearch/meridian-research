@@ -1,8 +1,7 @@
+# NOT YET ACTIVE - do not enable cron-job.org for this
 name: US News
 
 on:
-  schedule:
-    - cron: '0 23 * * 2-6'  # 06:00 WIB Tue-Sat (UTC+7) — covers Mon-Fri US sessions
   workflow_dispatch:
   repository_dispatch:
     types: [trigger-us-news]
@@ -10,6 +9,10 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
